@@ -9,12 +9,39 @@
  * @param {string} content received by Nextcloud, splitted to be shown in UI notification
  */
 function showBgNotification(content) {
-	const [title, ...msg] = content.split('\n')
+	const [title, ...msg] = content.subject.split('\n')
+	const roomToken = content.app === 'spreed' && /^[a-zA-Z0-9]{4,64}$/.test(content.id || '') ? content.id : ''
 	const options = {
 		body: msg.join('\n'),
+		tag: 'nid' + content.nid,
+		data: { roomToken },
 	}
 	return self.registration.showNotification(title, options)
 }
+
+function closeBgNotifications(content) {
+	const tags = content['delete-all'] ? [undefined]
+		: content['delete-multiple'] ? content.nids.map((nid) => 'nid' + nid)
+			: ['nid' + content.nid]
+	return Promise.all(tags.map((tag) => self.registration.getNotifications({ tag })
+		.then((notifications) => notifications.forEach((notification) => notification.close()))))
+}
+
+self.addEventListener('notificationclick', function(event) {
+	event.notification.close()
+	const token = event.notification.data?.roomToken || ''
+	const path = '/index.php/apps/spreed/' + (/^[a-zA-Z0-9]{4,64}$/.test(token) ? token : '')
+	const url = new URL(path, self.location.origin).href
+	event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+		.then(async (clients) => {
+			const client = clients.find((candidate) => new URL(candidate.url).origin === self.location.origin)
+			if (client) {
+				await client.navigate(url)
+				return client.focus()
+			}
+			return self.clients.openWindow(url)
+		}))
+})
 
 /**
  * For Chrom* and Apple (who followed Chrome) users:
@@ -29,7 +56,7 @@ function silentNotification() {
 		body: 'This site has been updated from the background',
 	}
 	return self.registration.pushManager.getSubscription().then((sub) => {
-		if (sub.options.userVisibleOnly) {
+		if (sub?.options.userVisibleOnly) {
 			return self.registration.showNotification(location.host, options)
 		}
 	})
@@ -40,7 +67,6 @@ self.addEventListener('push', function(event) {
 
 	if (event.data) {
 		const content = event.data.json()
-		console.log('Got ', content)
 		// Send the event to the last focused page only,
 		// show a notification with the subject if we don't have any
 		// active tab
@@ -53,7 +79,9 @@ self.addEventListener('push', function(event) {
 					// Here, the user has an active tab, we don't need to show a notification from the sw
 				} else if (content.subject) {
 					console.debug('No valid client to send notif - showing bg notif')
-					return showBgNotification(content.subject)
+					return showBgNotification(content)
+				} else if (content.delete || content['delete-multiple'] || content['delete-all']) {
+					return closeBgNotifications(content).then(silentNotification)
 				} else {
 					console.warn('No valid client to send notif')
 					return silentNotification()
