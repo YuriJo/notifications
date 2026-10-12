@@ -10,7 +10,7 @@
  */
 function showBgNotification(content) {
 	const [title, ...msg] = content.subject.split('\n')
-	const roomToken = content.app === 'spreed' && /^[a-zA-Z0-9]{4,64}$/.test(content.id || '') ? content.id : ''
+	const roomToken = content.app === 'spreed' && /^[a-z0-9]{4,30}$/.test(content.id || '') ? content.id : ''
 	const options = {
 		body: msg.join('\n'),
 		tag: 'nid' + content.nid,
@@ -30,7 +30,7 @@ function closeBgNotifications(content) {
 self.addEventListener('notificationclick', function(event) {
 	event.notification.close()
 	const token = event.notification.data?.roomToken || ''
-	const path = '/index.php/apps/spreed/' + (/^[a-zA-Z0-9]{4,64}$/.test(token) ? token : '')
+	const path = /^[a-z0-9]{4,30}$/.test(token) ? '/index.php/call/' + token : '/index.php/apps/spreed/'
 	const url = new URL(path, self.location.origin).href
 	event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true })
 		.then(async (clients) => {

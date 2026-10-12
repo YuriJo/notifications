@@ -44,13 +44,13 @@ test('incoming push without a tab carries a room target and stable cancellation 
 test('notification click opens the Talk room when no tab exists', async () => {
   const w = worker();
   await w.send('notificationclick', {notification: {data:{roomToken:'abc12345'}, close(){}}});
-  assert.deepEqual(w.opened, ['https://calls.reactive.team/index.php/apps/spreed/abc12345']);
+  assert.deepEqual(w.opened, ['https://calls.reactive.team/index.php/call/abc12345']);
 });
 test('click reuses and focuses an existing origin tab', async () => {
   const w = worker(), visits = [];
   w.clients = [{url:'https://calls.reactive.team/apps/files/', navigate:async url=>visits.push(url),focus:async()=>visits.push('focus')}];
   await w.send('notificationclick', {notification:{data:{roomToken:'abc12345'},close(){}}});
-  assert.deepEqual(visits, ['https://calls.reactive.team/index.php/apps/spreed/abc12345','focus']);
+  assert.deepEqual(visits, ['https://calls.reactive.team/index.php/call/abc12345','focus']);
   assert.equal(w.opened.length, 0);
 });
 test('invalid room data cannot navigate away from our origin', async () => {
