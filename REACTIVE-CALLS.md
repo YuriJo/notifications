@@ -10,6 +10,8 @@ Changes:
 - Cancellation uses the same `nid` tag for one, multiple and all notifications.
 - Subscription activation reaches every controlled tab, including the tab that
   registered it when another tab is focused.
+- Initialization also runs when the async Vue component mounts after window load.
+  Service worker updates bypass the HTTP cache.
 - Reload reuses a matching Chrome subscription without changing its
   `userVisibleOnly` option. A new subscription retains the upstream fallback.
 - Remove logging of push subscription objects and public VAPID keys.

@@ -18,11 +18,24 @@ function loadServiceWorker() {
 	}
 	return navigator.serviceWorker.register(
 		generateUrl('/apps/notifications/service-worker.js', {}, { noRewrite: true }),
-		{ scope },
+		{ scope, updateViaCache: 'none' },
 	).then((registration) => {
 		console.info('ServiceWorker registered')
 		return registration
 	})
+}
+
+/**
+ * Run setup even if the async notification component mounted after window load.
+ *
+ * @param {function(): void} callback Setup callback
+ */
+function afterWindowLoad(callback) {
+	if (document.readyState === 'complete') {
+		callback()
+	} else {
+		window.addEventListener('load', callback, { once: true })
+	}
 }
 /**
  * Set Push notification Listener
@@ -140,6 +153,7 @@ function b64UrlEncode(inArr) {
 }
 
 export {
+	afterWindowLoad,
 	b64UrlEncode,
 	listenForPush,
 	loadServiceWorker,

@@ -120,6 +120,7 @@ import {
 } from './services/notificationsService.js'
 import { createWebNotification } from './services/webNotificationsService.js'
 import {
+	afterWindowLoad,
 	setWebPush,
 } from './services/webPushService.js'
 
@@ -289,7 +290,7 @@ export default {
 			// We don't fetch on push if notify_push is enabled, to avoid concurrency fetch.
 			// We could do the other way: fallback to notify_push only if we don't have
 			// web push
-			window.addEventListener('load', () => {
+			afterWindowLoad(() => {
 				this._setWebPush()
 			})
 		} else {
