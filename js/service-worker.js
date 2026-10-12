@@ -19,9 +19,15 @@ function showBgNotification(content) {
 	return self.registration.showNotification(title, options)
 }
 
+/**
+ *
+ * @param {object} content Push cancellation payload
+ */
 function closeBgNotifications(content) {
-	const tags = content['delete-all'] ? [undefined]
-		: content['delete-multiple'] ? content.nids.map((nid) => 'nid' + nid)
+	const tags = content['delete-all']
+		? [undefined]
+		: content['delete-multiple']
+			? content.nids.map((nid) => 'nid' + nid)
 			: ['nid' + content.nid]
 	return Promise.all(tags.map((tag) => self.registration.getNotifications({ tag })
 		.then((notifications) => notifications.forEach((notification) => notification.close()))))
@@ -72,6 +78,12 @@ self.addEventListener('push', function(event) {
 		// active tab
 		event.waitUntil(self.clients.matchAll()
 			.then((clientList) => {
+				// The tab that registered the subscription must receive the
+				// activation handshake even when another tab is focused.
+				if (content.activationToken && clientList.length) {
+					clientList.forEach((client) => client.postMessage({ type: 'push', content }))
+					return silentNotification()
+				}
 				const client = clientList[0]
 				if (client !== undefined) {
 					console.debug('Sending to client ', client)

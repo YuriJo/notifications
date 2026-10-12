@@ -61,12 +61,16 @@ function registerPush(registration) {
 	return axios.get(generateOcsUrl('apps/notifications/api/v2/webpush/vapid'))
 		.then((response) => response.data.ocs.data.vapid)
 		.then((vapid) => {
-			console.log('Server vapid key=' + vapid)
 			const options = {
 				applicationServerKey: vapid,
 				userVisibleOnly: false,
 			}
 			return registration.pushManager.getSubscription().then((sub) => {
+				// Reuse an existing subscription with this key. Chrome rejects
+				// re-subscribing it with different userVisibleOnly options.
+				if (sub !== null && b64UrlEncode(sub.options.applicationServerKey) === vapid) {
+					return sub
+				}
 				if (sub !== null && b64UrlEncode(sub.options.applicationServerKey) !== vapid) {
 					console.log('VAPID key changed, unsubscribing first')
 					return sub.unsubscribe().then(() => {
@@ -96,7 +100,6 @@ function registerPush(registration) {
 				}
 			})
 		}).then((sub) => {
-			console.log(sub)
 			const form = new FormData()
 			form.append('endpoint', sub.endpoint)
 			form.append('uaPublicKey', b64UrlEncode(sub.getKey('p256dh')))

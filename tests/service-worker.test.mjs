@@ -58,3 +58,13 @@ test('invalid room data cannot navigate away from our origin', async () => {
   await w.send('notificationclick', {notification:{data:{roomToken:'https://evil.example/'},close(){}}});
   assert.deepEqual(w.opened, ['https://calls.reactive.team/index.php/apps/spreed/']);
 });
+test('activation reaches the registering tab even when another tab is focused', async () => {
+  const w = worker(), received = [];
+  w.clients = [
+    {postMessage: message => received.push({tab:'older', message})},
+    {postMessage: message => received.push({tab:'registering', message})},
+  ];
+  await w.send('push', {data:{json:()=>({activationToken:'fixture-activation'})}});
+  assert.deepEqual(received.map(item=>item.tab), ['older','registering']);
+  assert.equal(received[1].message.content.activationToken, 'fixture-activation');
+});
